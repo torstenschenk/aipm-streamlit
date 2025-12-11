@@ -47,7 +47,7 @@ app = FastAPI(title="Iris Model API", version="1.0.0", lifespan=lifespan)
 
 @app.get("/")
 def root() -> dict:
-    return {"status": "ok", "model_loaded": _model is not None}
+    return {"status": "ok", "model_loaded": app.state.model is not None}
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(body: PredictRequest) -> PredictResponse:
