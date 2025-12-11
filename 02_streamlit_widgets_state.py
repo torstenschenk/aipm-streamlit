@@ -18,13 +18,16 @@ st.title("Counter demo")
 if "count" not in st.session_state:
     st.session_state.count = 0  # Initialize state only once per browser session
 
-st.write(f"Current count: {st.session_state.count}")
+# vibe coded
+count_placeholder = st.empty()  # Reserve space so updates land immediately after button clicks
 
 if st.button("Increment"):
     st.session_state.count += 1  # Button triggers a rerun; state persists
 
 if st.button("Reset"):
     st.session_state.count = 0  # Another button shares the same state store
+
+count_placeholder.write(f"Current count: {st.session_state.count}")
 
 st.caption("State lives across reruns. Combine it with text inputs and selects.")
 
@@ -38,7 +41,10 @@ with st.form("profile"):
     submitted = st.form_submit_button("Save")  # Submission triggers a single rerun
 
 if submitted:
-    st.success(f"Saved {name or 'anonymous'} ({role}) | subscribed={subscribed}")  # Form values available after submit
+    if not name: # Simple validation
+        st.error("Name is required to save the profile.")
+    else:
+        st.success(f"Saved {name or 'anonymous'} ({role}) | subscribed={subscribed}")  # Form values available after submit
 
 st.markdown(
     """
@@ -48,3 +54,5 @@ Stretch goals:
 - Log the state dictionary with `st.write(st.session_state)` to see what Streamlit tracks.
     """
 )
+
+st.write(st.session_state)

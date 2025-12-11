@@ -17,7 +17,7 @@ st.title("Hello Streamlit")
 st.subheader("You control layout by top-to-bottom code execution.")
 
 name = st.text_input("Your name", placeholder="Pat")  # Text input reruns the script on change
-level = st.slider("Excitement level", min_value=1, max_value=5, value=3)  # Slider also triggers reruns
+level = st.slider("Excitement level", min_value=1, max_value=7, value=3)  # Slider also triggers reruns
 
 st.write(f"Hi {name or 'friend'}!")
 st.write("You can drag sliders, type text, and the app reruns automatically.")
@@ -31,3 +31,6 @@ Try:
 - Comment out lines to see how removing a widget changes the UI on rerun.
     """
 )
+
+climate = st.selectbox("Choose a climate option", options=["Tropic", "Nordic", "Desert", "Temperate"], placeholder="Select a climate")  # Additional widget for exploration
+st.write(f"Your climate {climate or 'no selection'}!")
