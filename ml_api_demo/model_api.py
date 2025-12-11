@@ -13,6 +13,9 @@ import joblib
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from contextlib import asynccontextmanager
+import asyncio
+
 ARTIFACT_PATH = Path(__file__).parent / "artifacts" / "iris_model.joblib"
 
 
@@ -30,35 +33,25 @@ class PredictResponse(BaseModel):
     probabilities: List[float]
     class_labels: List[str]
 
-
-app = FastAPI(title="Iris Model API", version="1.0.0")
-
-_model = None
-_label_names: List[str] = []
-
-
-@app.on_event("startup")
-def load_model() -> None:
-    global _model, _label_names
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     if not ARTIFACT_PATH.exists():
-        raise RuntimeError(
-            "Model artifact missing. Run the training notebook or train_model.py to create artifacts/iris_model.joblib."
-        )
-    payload = joblib.load(ARTIFACT_PATH)
-    _model = payload["model"]
-    _label_names = list(payload["target_names"])
+        raise RuntimeError(...)
+    loop = asyncio.get_running_loop()
+    payload = await loop.run_in_executor(None, joblib.load, ARTIFACT_PATH)
+    app.state.model = payload["model"]
+    app.state.label_names = list(payload["target_names"])
+    yield
 
+app = FastAPI(title="Iris Model API", version="1.0.0", lifespan=lifespan)
 
 @app.get("/")
 def root() -> dict:
     return {"status": "ok", "model_loaded": _model is not None}
 
-
 @app.post("/predict", response_model=PredictResponse)
 def predict(body: PredictRequest) -> PredictResponse:
-    if _model is None:
-        raise HTTPException(status_code=500, detail="Model not loaded")
-
+   
     vector = [
         body.sepal_length,
         body.sepal_width,
@@ -66,12 +59,17 @@ def predict(body: PredictRequest) -> PredictResponse:
         body.petal_width,
     ]
 
-    probs = _model.predict_proba([vector])[0]
+    model = app.state.model
+    label_names = app.state.label_names
+    if model is None:
+        raise HTTPException(status_code=500, detail="Model not loaded")
+    
+    probs = model.predict_proba([vector])[0]
     pred_idx = int(probs.argmax())
     return PredictResponse(
-        predicted_class=_label_names[pred_idx],
+        predicted_class=label_names[pred_idx],
         probabilities=list(map(float, probs)),
-        class_labels=_label_names,
+        class_labels=label_names,
     )
 
 
